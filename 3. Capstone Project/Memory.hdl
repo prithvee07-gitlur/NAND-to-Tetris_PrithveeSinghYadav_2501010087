@@ -1,0 +1,31 @@
+// Memory for Hack Computer
+// Capstone Project - Prithvee Singh Yadav (2501010087), K = 87
+// Memory map: 0-16383 = RAM, 16384-24575 = Screen, 24576 = Keyboard
+
+CHIP Memory {
+    IN in[16], load, address[15];
+    OUT out[16];
+
+    PARTS:
+    // address[14] and address[13] determine which section:
+    // 00 or 01 -> RAM (address[14]=0) => addresses 0..16383
+    // 10 -> Screen (address[14]=1, address[13]=0) => addresses 16384..24575
+    // 11 -> Keyboard (address[14]=1, address[13]=1) => address 24576
+
+    // Route load signal to the correct chip
+    DMux4Way(in=load, sel=address[13..14], a=loadRAM1, b=loadRAM2, c=loadScreen, d=loadKbd);
+    // RAM gets load from both 00 and 01 ranges
+    Or(a=loadRAM1, b=loadRAM2, out=loadRAM);
+
+    // RAM16K: 16K x 16-bit RAM
+    RAM16K(in=in, load=loadRAM, address=address[0..13], out=ramOut);
+
+    // Screen: 8K memory-mapped display
+    Screen(in=in, load=loadScreen, address=address[0..12], out=screenOut);
+
+    // Keyboard: single register memory-mapped input
+    Keyboard(out=kbdOut);
+
+    // Select output based on address range
+    Mux4Way16(a=ramOut, b=ramOut, c=screenOut, d=kbdOut, sel=address[13..14], out=out);
+}
